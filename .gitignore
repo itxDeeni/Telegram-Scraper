@@ -1,0 +1,10 @@
+# Binaries
+freelance-scraper
+main
+
+# Output data
+gigs.json
+
+# IDE
+.vscode/
+.idea/
