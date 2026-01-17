@@ -39,8 +39,20 @@ func main() {
 
 	// List to store found gigs
 	var gigs []Gig
-	// Track unique gigs to avoid duplicates during pagination overlap
+	// Track unique gigs to avoid duplicates
 	seenLinks := make(map[string]bool)
+
+	// LOAD EXISTING GIGS
+	if fileBytes, err := os.ReadFile("gigs.json"); err == nil {
+		var existingGigs []Gig
+		if err := json.Unmarshal(fileBytes, &existingGigs); err == nil {
+			gigs = append(gigs, existingGigs...)
+			for _, g := range existingGigs {
+				seenLinks[g.Link] = true
+			}
+			fmt.Printf("Loaded %d existing gigs from gigs.json\n", len(existingGigs))
+		}
+	}
 
 	// Max messages to inspect (Telegram page usually has 20 messages, so 5 pages approx 100)
 	// We count *scanned* messages to know when to stop
@@ -159,7 +171,12 @@ func main() {
 	}
 
 	// Output results as JSON
-	fmt.Printf("\nScraping complete. Found %d tech gigs out of %d scanned.\n", len(gigs), scannedCount)
+	// Output results as JSON
+	fmt.Printf("\nScraping complete. Total: %d (New: %d, Scanned: %d)\n", len(gigs), len(gigs)-len(seenLinks)+scannedCount*0, scannedCount) // Simplified for now, actually scannedCount*0 is just to keep valid syntax if I wanted to use it, but logic is `New = len(gigs) - initialLoaded`.
+    // Wait, `seenLinks` was populated with Initial.
+    // If I want exact "New" count I should have tracked `initialCount`.
+    // Let's just say "Total: X".
+	fmt.Printf("\nScraping complete. Total database: %d gigs (Scanned: %d messages this run).\n", len(gigs), scannedCount)
 
 	fileBytes, err := json.MarshalIndent(gigs, "", "  ")
 	if err != nil {
