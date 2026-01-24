@@ -22,21 +22,43 @@ type Gig struct {
 	Source      string    `json:"source"`      // Source channel or site
 }
 
-// Keywords to filter for interesting tech gigs
-// TODO: Make this configurable via a config file or command-line flags
-var techKeywords = []string{
-	"saas", "open source", "opensource", "api", "bot", "scraping", "automation",
-	"react", "go", "golang", "python", "node", "nodejs", "typescript", "javascript",
-	"vue", "nextjs", "aws", "docker", "kubernetes", "cloud", "ai", "machine learning",
-	"ml", "llm", "gpt", "crypto", "blockchain", "web3", "security", "pentest",
+// Config holds the scraper configuration
+type Config struct {
+	URLs      []string `json:"urls"`
+	Keywords  []string `json:"keywords"`
+	MaxPages  int      `json:"max_pages"`
+}
+
+func loadConfig() (Config, error) {
+	var config Config
+	fileBytes, err := os.ReadFile("config.json")
+	if err != nil {
+		return config, err
+	}
+	err = json.Unmarshal(fileBytes, &config)
+	return config, err
 }
 
 func main() {
+	// Load Configuration
+	config, err := loadConfig()
+	if err != nil {
+		log.Printf("Warning: Could not load config.json, using defaults: %v", err)
+		// Default config if loading fails
+		config = Config{
+			URLs: []string{"https://t.me/s/Freelanceroff"},
+			Keywords: []string{
+				"saas", "go", "golang", "python", "react",
+			},
+			MaxPages: 100,
+		}
+	}
+
 	// TODO: Make allowed domains and sources configurable
 	c := colly.NewCollector(
 		colly.AllowedDomains("t.me"),
 	)
-
+	
 	// List to store found gigs
 	var gigs []Gig
 	// Track unique gigs to avoid duplicates
@@ -54,10 +76,9 @@ func main() {
 		}
 	}
 
-	// Max messages to inspect (Telegram page usually has 20 messages, so 5 pages approx 100)
-	// We count *scanned* messages to know when to stop
+	// Max messages to inspect
 	scannedCount := 0
-	maxScanned := 150
+	maxScanned := config.MaxPages
 
 	// Selector for each message in the channel view
 	c.OnHTML(".tgme_widget_message", func(e *colly.HTMLElement) {
@@ -142,7 +163,7 @@ func main() {
 		})
 
 		// --- Filtering ---
-		if isTechGig(gig) {
+		if isTechGig(gig, config) {
 			gigs = append(gigs, gig)
 		}
 	})
@@ -163,11 +184,14 @@ func main() {
 		}
 	})
 
-	// Visit the target URL
+	// Visit the target URLs
 	fmt.Println("Starting scraper...")
-	err := c.Visit("https://t.me/s/Freelanceroff")
-	if err != nil {
-		log.Fatal(err)
+	for _, u := range config.URLs {
+		fmt.Printf("Visiting: %s\n", u)
+		err := c.Visit(u)
+		if err != nil {
+			log.Printf("Error visiting %s: %v", u, err)
+		}
 	}
 
 	// Output results as JSON
@@ -192,7 +216,7 @@ func main() {
 }
 
 // isTechGig checks if the gig contains any of the interesting keywords
-func isTechGig(gig Gig) bool {
+func isTechGig(gig Gig, config Config) bool {
 	combinedText := strings.ToLower(gig.Title + " " + gig.Description + " " + strings.Join(gig.Skills, " "))
 	
 	// Normalize text for better matching (replace punctuation with spaces)
@@ -205,7 +229,7 @@ func isTechGig(gig Gig) bool {
 		wordMap[w] = true
 	}
 
-	for _, keyword := range techKeywords {
+	for _, keyword := range config.Keywords {
 		// Multi-word keyword (e.g. "open source") -> check substring
 		if strings.Contains(keyword, " ") {
 			if strings.Contains(combinedText, keyword) {

@@ -1,0 +1,43 @@
+{
+    "urls": [
+        "https://t.me/s/Freelanceroff",
+        "https://t.me/s/remotejobslists",
+        "https://t.me/s/javascript_jobs",
+        "https://t.me/s/python_jobs",
+        "https://t.me/s/golang_jobs"
+    ],
+    "keywords": [
+        "saas",
+        "open source",
+        "opensource",
+        "api",
+        "bot",
+        "scraping",
+        "automation",
+        "react",
+        "go",
+        "golang",
+        "python",
+        "node",
+        "nodejs",
+        "typescript",
+        "javascript",
+        "vue",
+        "nextjs",
+        "aws",
+        "docker",
+        "kubernetes",
+        "cloud",
+        "ai",
+        "machine learning",
+        "ml",
+        "llm",
+        "gpt",
+        "crypto",
+        "blockchain",
+        "web3",
+        "security",
+        "pentest"
+    ],
+    "max_pages": 150
+}
